@@ -2,10 +2,18 @@
 from xmlbook import *
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from xml.etree import ElementTree
+
+
+import mimetypes
+import mysmtplib
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
 
 ##global
 conn = None
-regKey = 'FzCbn1kMa0%2Ft0TRkotzGekvr0P0sEYnTfnXGzlfdnh0MaOIgzjKXN4zpALLpJ%2Fj3bwpyZ6ORRm87bSvlhigIrw%3D%3D'
+tree = None
+#regKey = 'FzCbn1kMa0%2Ft0TRkotzGekvr0P0sEYnTfnXGzlfdnh0MaOIgzjKXN4zpALLpJ%2Fj3bwpyZ6ORRm87bSvlhigIrw%3D%3D'
 
 # 네이버 OpenAPI 접속 정보 information
 server = "apis.data.go.kr"
@@ -13,6 +21,9 @@ server = "apis.data.go.kr"
 # smtp 정보
 host = "smtp.gmail.com" # Gmail SMTP 서버 주소.
 port = "587"
+
+BooksDoc = None
+
 
 def userURIBuilder(server,**user):
     str = "http://" + server + "/search" + "?"
@@ -24,11 +35,12 @@ def connectOpenAPIServer():
     global conn, server
     conn = HTTPConnection(server)
         
-def getBookDataFromISBN(isbn):
+def getBookDataFromISBN():
     global server, regKey, conn
     if conn == None :
         connectOpenAPIServer()
-    uri = userURIBuilder(server, key=regKey, query='%20', display="1", start="1", target="book_adv", d_isbn=isbn)
+    #uri = userURIBuilder(server, key=regKey, query='%20', display="1", start="1", target="book_adv", d_isbn=isbn)
+    uri = "/1262000/CountryBasicService/getCountryBasicList?ServiceKey=FzCbn1kMa0%2Ft0TRkotzGekvr0P0sEYnTfnXGzlfdnh0MaOIgzjKXN4zpALLpJ%2Fj3bwpyZ6ORRm87bSvlhigIrw%3D%3D&numOfRows=999&pageSize=999&pageNo=1&startPage=FzCbn1kMa0%2Ft0TRkotzGekvr0P0sEYnTfnXGzlfdnh0MaOIgzjKXN4zpALLpJ%2Fj3bwpyZ6ORRm87bSvlhigIrw%3D%3D1"
     conn.request("GET", uri)
     
     req = conn.getresponse()
@@ -39,20 +51,24 @@ def getBookDataFromISBN(isbn):
     else:
         print ("OpenAPI request has been failed!! please retry")
         return None
-
+        
 def extractBookData(strXml):
-    from xml.etree import ElementTree
+    global tree
+    
+    
     tree = ElementTree.fromstring(strXml)
     print (strXml)
     # Book 엘리먼트를 가져옵니다.
+    """
     itemElements = tree.getiterator("item")  # return list type
     print(itemElements)
     for item in itemElements:
-        isbn = item.find("isbn")
-        strTitle = item.find("title")
+        strTitle = item.find("countryEnName")
         print (strTitle)
         if len(strTitle.text) > 0 :
-           return {"ISBN":isbn.text,"title":strTitle.text}
+           print("countryEnName:", strTitle.text)
+    """
+
 
 def sendMain():
     global host, port
@@ -134,3 +150,55 @@ def checkConnection():
         print("Error : connection is fail")
         return False
     return True
+
+def PrintAllCountry():
+    global tree
+    
+    itemElements = tree.getiterator("item")
+    for item in itemElements:
+        strTitle = item.find("countryName")
+        #print (strTitle)
+        if len(strTitle.text) > 0 :
+            print("countryName:", strTitle.text)
+
+def SearchCountry():
+    global tree
+    real = False
+    ctry = str(input ('input country to find : '))
+    
+    
+    itemElements = tree.getiterator("item")
+    for item in itemElements:
+        strTitle = item.find("countryName")
+        if strTitle.text == ctry:
+            print(ctry, "is real")
+            real = True
+            strTitle = item.find("basic")
+            print("정보 : ", strTitle.text)
+            real = True
+            break;
+    if real == False:    print("Not real")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
